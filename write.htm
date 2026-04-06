@@ -1,0 +1,1057 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>HTML5手写板 - 移动端优化版</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            color: #333;
+            padding: 0;
+            overflow-x: hidden;
+        }
+        
+        .container {
+            max-width: 100%;
+            margin: 0 auto;
+            background-color: white;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        header {
+            background: linear-gradient(90deg, #4b6cb7 0%, #182848 100%);
+            color: white;
+            padding: 15px 20px;
+            text-align: center;
+            flex-shrink: 0;
+        }
+        
+        h1 {
+            font-size: 22px;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+        
+        .subtitle {
+            font-size: 14px;
+            opacity: 0.9;
+            line-height: 1.4;
+        }
+        
+        .main-content {
+            display: flex;
+            flex-direction: column;
+            padding: 15px;
+            flex-grow: 1;
+        }
+        
+        .canvas-container {
+            width: 100%;
+            margin-bottom: 20px;
+            flex-shrink: 0;
+        }
+        
+        #handwritingCanvas {
+            width: 100%;
+            height: 50vh;
+            min-height: 350px;
+            border: 2px solid #ddd;
+            border-radius: 12px;
+            background-color: white;
+            cursor: crosshair;
+            touch-action: none;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            display: block;
+        }
+        
+        .controls-wrapper {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .control-panel {
+            background-color: #f8f9fa;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        }
+        
+        .control-group {
+            margin-bottom: 25px;
+        }
+        
+        .control-group:last-child {
+            margin-bottom: 0;
+        }
+        
+        .control-title {
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: #4b6cb7;
+            font-size: 16px;
+            border-bottom: 1px solid #eaeaea;
+            padding-bottom: 8px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .control-title i {
+            margin-right: 8px;
+            font-size: 18px;
+        }
+        
+        .color-palette {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: center;
+        }
+        
+        .color-option {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 3px solid transparent;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+        
+        .color-option:hover, .color-option:active {
+            transform: scale(1.1);
+        }
+        
+        .color-option.active {
+            border-color: #333;
+            transform: scale(1.1);
+            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2);
+        }
+        
+        .brush-size-container {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .brush-size-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 14px;
+            color: #666;
+        }
+        
+        .brush-size-slider {
+            width: 100%;
+            height: 8px;
+            -webkit-appearance: none;
+            appearance: none;
+            background: #e0e0e0;
+            border-radius: 4px;
+            outline: none;
+        }
+        
+        .brush-size-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: #4b6cb7;
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+        
+        .brush-size-slider::-moz-range-thumb {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: #4b6cb7;
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+        
+        .brush-size-visual {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-top: 10px;
+        }
+        
+        .brush-preview {
+            display: inline-block;
+            border-radius: 50%;
+            background-color: #333;
+            margin: 0 10px;
+        }
+        
+        .action-buttons {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-top: 5px;
+        }
+        
+        .btn {
+            padding: 14px 10px;
+            border: none;
+            border-radius: 10px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .btn:active {
+            transform: translateY(2px);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        .btn-primary {
+            background-color: #4b6cb7;
+            color: white;
+        }
+        
+        .btn-primary:active {
+            background-color: #3a5795;
+        }
+        
+        .btn-secondary {
+            background-color: #6c757d;
+            color: white;
+        }
+        
+        .btn-secondary:active {
+            background-color: #5a6268;
+        }
+        
+        .btn-success {
+            background-color: #28a745;
+            color: white;
+        }
+        
+        .btn-success:active {
+            background-color: #218838;
+        }
+        
+        .btn-danger {
+            background-color: #dc3545;
+            color: white;
+        }
+        
+        .btn-danger:active {
+            background-color: #c82333;
+        }
+        
+        .btn-large {
+            grid-column: span 2;
+        }
+        
+        .instructions {
+            background-color: #f0f8ff;
+            border-left: 4px solid #4b6cb7;
+            padding: 15px;
+            margin-top: 20px;
+            border-radius: 0 10px 10px 0;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        
+        .instructions h3 {
+            color: #4b6cb7;
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+        
+        .instructions ol {
+            padding-left: 20px;
+        }
+        
+        .instructions li {
+            margin-bottom: 8px;
+        }
+        
+        .instructions strong {
+            color: #4b6cb7;
+        }
+        
+        footer {
+            text-align: center;
+            padding: 15px;
+            color: #666;
+            font-size: 13px;
+            border-top: 1px solid #eee;
+            background-color: #f9f9f9;
+            flex-shrink: 0;
+        }
+        
+        .status-message {
+            padding: 12px 15px;
+            margin: 15px 0;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: 500;
+            font-size: 14px;
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        .status-success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+            display: block;
+        }
+        
+        .status-error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+            display: block;
+        }
+        
+        .brush-size-options {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 8px;
+        }
+        
+        .size-option {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background-color: #333;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 12px;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        .size-option:active {
+            transform: scale(1.1);
+        }
+        
+        .size-option.active {
+            background-color: #4b6cb7;
+            transform: scale(1.1);
+            box-shadow: 0 3px 6px rgba(0, 0, 0, 0.2);
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        /* 平板设备优化 */
+        @media (min-width: 768px) {
+            .container {
+                max-width: 768px;
+                margin: 20px auto;
+                min-height: auto;
+                border-radius: 15px;
+                box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+                overflow: hidden;
+            }
+            
+            .main-content {
+                flex-direction: row;
+                padding: 20px;
+            }
+            
+            .canvas-container {
+                flex: 2;
+                margin-bottom: 0;
+                margin-right: 20px;
+            }
+            
+            .controls-wrapper {
+                flex: 1;
+                max-width: 320px;
+            }
+            
+            #handwritingCanvas {
+                height: 450px;
+            }
+            
+            .action-buttons {
+                grid-template-columns: 1fr;
+            }
+            
+            .btn-large {
+                grid-column: span 1;
+            }
+        }
+        
+        /* 大屏手机优化 */
+        @media (max-width: 767px) and (min-width: 480px) {
+            #handwritingCanvas {
+                height: 60vh;
+            }
+            
+            .action-buttons {
+                grid-template-columns: repeat(4, 1fr);
+            }
+            
+            .btn-large {
+                grid-column: span 2;
+            }
+        }
+        
+        /* 小屏手机优化 */
+        @media (max-width: 479px) {
+            #handwritingCanvas {
+                height: 45vh;
+                min-height: 300px;
+            }
+            
+            .color-option {
+                width: 32px;
+                height: 32px;
+            }
+            
+            .btn {
+                font-size: 14px;
+                padding: 12px 8px;
+            }
+            
+            .control-panel {
+                padding: 15px;
+            }
+        }
+        
+        /* 横屏模式优化 */
+        @media (orientation: landscape) and (max-height: 600px) {
+            .main-content {
+                flex-direction: row;
+            }
+            
+            .canvas-container {
+                flex: 2;
+                margin-right: 15px;
+                margin-bottom: 0;
+            }
+            
+            .controls-wrapper {
+                flex: 1;
+            }
+            
+            #handwritingCanvas {
+                height: 80vh;
+                min-height: auto;
+            }
+            
+            .action-buttons {
+                grid-template-columns: 1fr;
+            }
+            
+            .btn-large {
+                grid-column: span 1;
+            }
+        }
+        
+        /* 防止长按选择文本 */
+        .btn, .color-option, .size-option {
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>HTML5手写板</h1>
+            <p class="subtitle">手写内容可复制为图片，直接粘贴到Word文档中</p>
+            <p class="subtitle">如图片大小不合适，可使用Word或WPS图片编辑功能处理</p>
+        </header>
+        
+        <div class="main-content">
+            <div class="canvas-container">
+                <canvas id="handwritingCanvas"></canvas>
+                <div id="statusMessage" class="status-message"></div>
+            </div>
+            
+            <div class="controls-wrapper">
+                <div class="control-panel">
+                    <div class="control-group">
+                        <div class="control-title">
+                            <span>🎨</span> 画笔颜色
+                        </div>
+                        <div class="color-palette" id="colorPalette">
+                            <!-- 颜色选项将通过JS动态生成 -->
+                        </div>
+                    </div>
+                    
+                    <div class="control-group">
+                        <div class="control-title">
+                            <span>🖊️</span> 画笔粗细
+                        </div>
+                        <div class="brush-size-container">
+                            <div class="brush-size-label">
+                                <span>细</span>
+                                <span id="currentBrushSize">3</span>
+                                <span>粗</span>
+                            </div>
+                            <input type="range" min="1" max="20" value="3" class="brush-size-slider" id="brushSlider">
+                        </div>
+                        <div class="brush-size-options" id="brushSize">
+                            <!-- 粗细选项将通过JS动态生成 -->
+                        </div>
+                    </div>
+                    
+                    <div class="control-group">
+                        <div class="control-title">
+                            <span>⚙️</span> 操作
+                        </div>
+                        <div class="action-buttons">
+                            <button id="copyBtn" class="btn btn-primary btn-large">
+                                <span>📋</span> 复制到剪贴板
+                            </button>
+                            <button id="downloadBtn" class="btn btn-success">
+                                <span>💾</span> 下载
+                            </button>
+                            <button id="clearBtn" class="btn btn-danger">
+                                <span>🗑️</span> 清除
+                            </button>
+                            <button id="undoBtn" class="btn btn-secondary">
+                                <span>↩️</span> 撤销
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="instructions">
+                    <h3>使用说明</h3>
+                    <ol>
+                        <li>在画布上直接手写或绘制内容</li>
+                        <li>使用工具栏调整画笔颜色和粗细</li>
+                        <li>点击<strong>"复制到剪贴板"</strong>，手写内容将作为图片复制</li>
+                        <li>打开Word文档，按<strong>Ctrl+V</strong>粘贴即可</li>
+                        <li>使用<strong>"撤销"</strong>可撤销最后一笔</li>
+                        <li>使用<strong>"清除"</strong>可清空所有内容</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+        
+        <footer>
+            <p>HTML5手写板 - 移动端优化版</p>
+            <p>提示：复制图片功能需要HTTPS环境或本地localhost环境</p>
+        </footer>
+    </div>
+
+    <script>
+        // 初始化变量
+        let canvas, ctx;
+        let isDrawing = false;
+        let lastX = 0;
+        let lastY = 0;
+        let currentColor = '#000000';
+        let currentBrushSize = 3;
+        let drawingHistory = [];
+        let currentPath = [];
+        
+        // 颜色选项
+        const colors = [
+            '#000000', '#FF0000', '#00AA00', '#0000FF', 
+            '#FFAA00', '#AA00AA', '#00AAAA', '#8B4513',
+            '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4'
+        ];
+        
+        // 画笔粗细选项
+        const brushSizes = [1, 3, 5, 8, 12, 20];
+        
+        // 初始化函数
+        function init() {
+            // 获取Canvas元素和上下文
+            canvas = document.getElementById('handwritingCanvas');
+            ctx = canvas.getContext('2d');
+            
+            // 设置Canvas尺寸（考虑设备像素比以获得清晰显示）
+            const dpr = window.devicePixelRatio || 1;
+            const rect = canvas.getBoundingClientRect();
+            
+            canvas.width = rect.width * dpr;
+            canvas.height = rect.height * dpr;
+            
+            ctx.scale(dpr, dpr);
+            
+            // 设置Canvas样式
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            ctx.strokeStyle = currentColor;
+            ctx.lineWidth = currentBrushSize;
+            
+            // 初始化画布背景
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillRect(0, 0, canvas.width / dpr, canvas.height / dpr);
+            
+            // 初始化颜色选择器
+            initColorPalette();
+            
+            // 初始化画笔粗细选择器
+            initBrushSize();
+            
+            // 初始化滑块
+            initBrushSlider();
+            
+            // 添加事件监听器
+            setupEventListeners();
+            
+            // 保存初始画布状态
+            saveCanvasState();
+        }
+        
+        // 初始化颜色选择器
+        function initColorPalette() {
+            const colorPalette = document.getElementById('colorPalette');
+            colorPalette.innerHTML = '';
+            
+            colors.forEach(color => {
+                const colorOption = document.createElement('div');
+                colorOption.className = 'color-option';
+                colorOption.style.backgroundColor = color;
+                colorOption.dataset.color = color;
+                colorOption.setAttribute('title', color);
+                
+                if (color === currentColor) {
+                    colorOption.classList.add('active');
+                }
+                
+                colorOption.addEventListener('click', () => {
+                    // 移除所有active类
+                    document.querySelectorAll('.color-option').forEach(option => {
+                        option.classList.remove('active');
+                    });
+                    
+                    // 添加active类到当前选项
+                    colorOption.classList.add('active');
+                    
+                    // 更新当前颜色
+                    currentColor = color;
+                    ctx.strokeStyle = currentColor;
+                    
+                    // 更新画笔预览颜色
+                    updateBrushPreview();
+                });
+                
+                // 添加触摸反馈
+                colorOption.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    colorOption.style.transform = 'scale(1.2)';
+                });
+                
+                colorOption.addEventListener('touchend', () => {
+                    colorOption.style.transform = 'scale(1)';
+                });
+                
+                colorPalette.appendChild(colorOption);
+            });
+        }
+        
+        // 初始化画笔粗细选择器
+        function initBrushSize() {
+            const brushSizeContainer = document.getElementById('brushSize');
+            brushSizeContainer.innerHTML = '';
+            
+            brushSizes.forEach(size => {
+                const sizeOption = document.createElement('div');
+                sizeOption.className = 'size-option';
+                sizeOption.textContent = size;
+                sizeOption.dataset.size = size;
+                sizeOption.style.width = `${size + 20}px`;
+                sizeOption.style.height = `${size + 20}px`;
+                
+                if (size === currentBrushSize) {
+                    sizeOption.classList.add('active');
+                }
+                
+                sizeOption.addEventListener('click', () => {
+                    // 移除所有active类
+                    document.querySelectorAll('.size-option').forEach(option => {
+                        option.classList.remove('active');
+                    });
+                    
+                    // 添加active类到当前选项
+                    sizeOption.classList.add('active');
+                    
+                    // 更新当前画笔粗细
+                    currentBrushSize = size;
+                    ctx.lineWidth = currentBrushSize;
+                    
+                    // 更新滑块
+                    document.getElementById('brushSlider').value = size;
+                    document.getElementById('currentBrushSize').textContent = size;
+                    
+                    // 更新画笔预览
+                    updateBrushPreview();
+                });
+                
+                brushSizeContainer.appendChild(sizeOption);
+            });
+        }
+        
+        // 初始化画笔粗细滑块
+        function initBrushSlider() {
+            const brushSlider = document.getElementById('brushSlider');
+            const currentBrushSizeElement = document.getElementById('currentBrushSize');
+            
+            brushSlider.value = currentBrushSize;
+            currentBrushSizeElement.textContent = currentBrushSize;
+            
+            brushSlider.addEventListener('input', function() {
+                const size = parseInt(this.value);
+                currentBrushSize = size;
+                ctx.lineWidth = currentBrushSize;
+                currentBrushSizeElement.textContent = size;
+                
+                // 更新画笔预览
+                updateBrushPreview();
+                
+                // 更新选中状态
+                document.querySelectorAll('.size-option').forEach(option => {
+                    if (parseInt(option.dataset.size) === size) {
+                        option.classList.add('active');
+                    } else {
+                        option.classList.remove('active');
+                    }
+                });
+            });
+        }
+        
+        // 更新画笔预览
+        function updateBrushPreview() {
+            const brushPreview = document.querySelector('.brush-preview');
+            if (!brushPreview) {
+                const brushSizeVisual = document.querySelector('.brush-size-visual');
+                if (brushSizeVisual) {
+                    const preview = document.createElement('div');
+                    preview.className = 'brush-preview';
+                    preview.style.width = `${currentBrushSize * 2}px`;
+                    preview.style.height = `${currentBrushSize * 2}px`;
+                    preview.style.backgroundColor = currentColor;
+                    brushSizeVisual.appendChild(preview);
+                }
+            } else {
+                brushPreview.style.width = `${currentBrushSize * 2}px`;
+                brushPreview.style.height = `${currentBrushSize * 2}px`;
+                brushPreview.style.backgroundColor = currentColor;
+            }
+        }
+        
+        // 设置事件监听器
+        function setupEventListeners() {
+            // 鼠标事件
+            canvas.addEventListener('mousedown', startDrawing);
+            canvas.addEventListener('mousemove', draw);
+            canvas.addEventListener('mouseup', stopDrawing);
+            canvas.addEventListener('mouseout', stopDrawing);
+            
+            // 触摸事件（移动设备支持）
+            canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
+            canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
+            canvas.addEventListener('touchend', stopDrawing);
+            
+            // 按钮事件
+            document.getElementById('copyBtn').addEventListener('click', copyCanvasToClipboard);
+            document.getElementById('downloadBtn').addEventListener('click', downloadCanvasAsImage);
+            document.getElementById('clearBtn').addEventListener('click', clearCanvas);
+            document.getElementById('undoBtn').addEventListener('click', undoLastAction);
+            
+            // 移动端按钮触摸反馈
+            document.querySelectorAll('.btn').forEach(btn => {
+                btn.addEventListener('touchstart', function() {
+                    this.style.transform = 'translateY(2px)';
+                });
+                
+                btn.addEventListener('touchend', function() {
+                    this.style.transform = 'translateY(0)';
+                });
+            });
+        }
+        
+        // 开始绘制
+        function startDrawing(e) {
+            e.preventDefault();
+            isDrawing = true;
+            currentPath = [];
+            
+            const pos = getMousePos(canvas, e);
+            [lastX, lastY] = [pos.x, pos.y];
+            
+            // 开始新路径
+            ctx.beginPath();
+            ctx.moveTo(lastX, lastY);
+            
+            // 记录路径起点
+            currentPath.push({x: lastX, y: lastY, color: currentColor, size: currentBrushSize});
+        }
+        
+        // 绘制中
+        function draw(e) {
+            if (!isDrawing) return;
+            e.preventDefault();
+            
+            const pos = getMousePos(canvas, e);
+            const currentX = pos.x;
+            const currentY = pos.y;
+            
+            // 绘制线条
+            ctx.lineTo(currentX, currentY);
+            ctx.stroke();
+            
+            // 记录路径点
+            currentPath.push({x: currentX, y: currentY, color: currentColor, size: currentBrushSize});
+            
+            // 更新最后位置
+            [lastX, lastY] = [currentX, currentY];
+        }
+        
+        // 停止绘制
+        function stopDrawing() {
+            if (isDrawing) {
+                isDrawing = false;
+                ctx.closePath();
+                
+                // 保存当前路径到历史记录
+                if (currentPath.length > 0) {
+                    drawingHistory.push({
+                        path: [...currentPath],
+                        color: currentColor,
+                        size: currentBrushSize
+                    });
+                }
+                
+                // 保存画布状态
+                saveCanvasState();
+            }
+        }
+        
+        // 处理触摸开始
+        function handleTouchStart(e) {
+            if (e.touches.length === 1) {
+                const touch = e.touches[0];
+                const mouseEvent = new MouseEvent('mousedown', {
+                    clientX: touch.clientX,
+                    clientY: touch.clientY
+                });
+                canvas.dispatchEvent(mouseEvent);
+                e.preventDefault();
+            }
+        }
+        
+        // 处理触摸移动
+        function handleTouchMove(e) {
+            if (e.touches.length === 1 && isDrawing) {
+                const touch = e.touches[0];
+                const mouseEvent = new MouseEvent('mousemove', {
+                    clientX: touch.clientX,
+                    clientY: touch.clientY
+                });
+                canvas.dispatchEvent(mouseEvent);
+                e.preventDefault();
+            }
+        }
+        
+        // 获取鼠标位置（考虑Canvas缩放）
+        function getMousePos(canvas, evt) {
+            const rect = canvas.getBoundingClientRect();
+            const dpr = window.devicePixelRatio || 1;
+            
+            let clientX, clientY;
+            
+            if (evt.type.includes('touch')) {
+                clientX = evt.touches[0].clientX;
+                clientY = evt.touches[0].clientY;
+            } else {
+                clientX = evt.clientX;
+                clientY = evt.clientY;
+            }
+            
+            return {
+                x: (clientX - rect.left) * (canvas.width / rect.width / dpr),
+                y: (clientY - rect.top) * (canvas.height / rect.height / dpr)
+            };
+        }
+        
+        // 保存画布状态
+        function saveCanvasState() {
+            // 在实际应用中，可以保存Canvas的当前状态用于撤销功能
+        }
+        
+        // 复制Canvas内容到剪贴板
+        async function copyCanvasToClipboard() {
+            try {
+                // 显示加载状态
+                const originalText = document.getElementById('copyBtn').innerHTML;
+                document.getElementById('copyBtn').innerHTML = '<span>⏳</span> 复制中...';
+                document.getElementById('copyBtn').disabled = true;
+                
+                // 将Canvas转换为Blob
+                canvas.toBlob(async (blob) => {
+                    try {
+                        // 使用Clipboard API复制图片
+                        const item = new ClipboardItem({ 'image/png': blob });
+                        await navigator.clipboard.write([item]);
+                        
+                        showStatus('✅ 图片已成功复制到剪贴板！现在可以粘贴到Word文档中。', 'success');
+                    } catch (err) {
+                        console.error('复制失败:', err);
+                        showStatus('❌ 复制失败：' + err.message + '。请尝试下载图片后手动插入Word。', 'error');
+                    } finally {
+                        // 恢复按钮状态
+                        document.getElementById('copyBtn').innerHTML = originalText;
+                        document.getElementById('copyBtn').disabled = false;
+                    }
+                }, 'image/png');
+            } catch (err) {
+                console.error('复制失败:', err);
+                showStatus('❌ 复制失败：' + err.message + '。请尝试下载图片后手动插入Word。', 'error');
+                // 恢复按钮状态
+                document.getElementById('copyBtn').innerHTML = originalText;
+                document.getElementById('copyBtn').disabled = false;
+            }
+        }
+        
+        // 下载Canvas内容为图片
+        function downloadCanvasAsImage() {
+            // 显示加载状态
+            const originalText = document.getElementById('downloadBtn').innerHTML;
+            document.getElementById('downloadBtn').innerHTML = '<span>⏳</span> 下载中...';
+            document.getElementById('downloadBtn').disabled = true;
+            
+            // 创建下载链接
+            const link = document.createElement('a');
+            link.download = '手写内容_' + new Date().getTime() + '.png';
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+            
+            showStatus('✅ 图片已下载，可以手动插入到Word文档中。', 'success');
+            
+            // 恢复按钮状态
+            setTimeout(() => {
+                document.getElementById('downloadBtn').innerHTML = originalText;
+                document.getElementById('downloadBtn').disabled = false;
+            }, 1000);
+        }
+        
+        // 清除画布
+        function clearCanvas() {
+            if (confirm('确定要清除所有手写内容吗？')) {
+                const dpr = window.devicePixelRatio || 1;
+                const rect = canvas.getBoundingClientRect();
+                
+                // 清除画布
+                ctx.fillStyle = '#FFFFFF';
+                ctx.fillRect(0, 0, rect.width, rect.height);
+                
+                // 重置历史记录
+                drawingHistory = [];
+                currentPath = [];
+                
+                showStatus('✅ 画布已清除。', 'success');
+            }
+        }
+        
+        // 撤销上一步
+        function undoLastAction() {
+            if (drawingHistory.length > 0) {
+                // 移除最后一条路径
+                drawingHistory.pop();
+                
+                // 清除画布
+                const dpr = window.devicePixelRatio || 1;
+                const rect = canvas.getBoundingClientRect();
+                ctx.fillStyle = '#FFFFFF';
+                ctx.fillRect(0, 0, rect.width, rect.height);
+                
+                // 重新绘制所有路径（除了最后一条）
+                drawingHistory.forEach(item => {
+                    if (item.path && item.path.length > 0) {
+                        ctx.strokeStyle = item.color;
+                        ctx.lineWidth = item.size;
+                        ctx.beginPath();
+                        ctx.moveTo(item.path[0].x, item.path[0].y);
+                        
+                        for (let i = 1; i < item.path.length; i++) {
+                            ctx.lineTo(item.path[i].x, item.path[i].y);
+                        }
+                        
+                        ctx.stroke();
+                    }
+                });
+                
+                // 恢复当前设置
+                ctx.strokeStyle = currentColor;
+                ctx.lineWidth = currentBrushSize;
+                
+                showStatus('✅ 已撤销上一步操作。', 'success');
+            } else {
+                showStatus('⚠️ 没有可撤销的操作。', 'error');
+            }
+        }
+        
+        // 显示状态消息
+        function showStatus(message, type) {
+            const statusElement = document.getElementById('statusMessage');
+            statusElement.textContent = message;
+            statusElement.className = 'status-message';
+            
+            if (type === 'success') {
+                statusElement.classList.add('status-success');
+            } else if (type === 'error') {
+                statusElement.classList.add('status-error');
+            }
+            
+            statusElement.style.display = 'block';
+            
+            // 3秒后自动隐藏
+            setTimeout(() => {
+                statusElement.style.display = 'none';
+            }, 3000);
+        }
+        
+        // 页面加载完成后初始化
+        window.addEventListener('load', init);
+        
+        // 窗口大小改变时调整Canvas
+        window.addEventListener('resize', function() {
+            // 简单的防抖处理
+            clearTimeout(this.resizeTimer);
+            this.resizeTimer = setTimeout(() => {
+                init();
+            }, 250);
+        });
+        
+        // 防止移动端下拉刷新
+        document.body.addEventListener('touchmove', function(e) {
+            if (e.target === canvas || e.target.closest('.controls-wrapper')) {
+                e.preventDefault();
+            }
+        }, { passive: false });
+    </script>
+</body>
+</html>
